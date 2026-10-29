@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histogram Builder — Math 2201</title>
+<style>
+  :root{
+    --ink:#1c2430; --muted:#5a6572; --accent:#0b5cad; --accent-dark:#084a8a;
+    --ok:#177245; --bad:#b3261e; --card:#ffffff; --bg:#eef2f6; --line:#d4dce4;
+    --soft:#f4f8fc;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.45;}
+  .wrap{max-width:1020px;margin:0 auto;padding:16px 14px 48px;}
+  header{margin:10px 0 14px;}
+  h1{font-size:1.7rem;margin:0 0 2px;}
+  h2{font-size:1.3rem;margin:0 0 6px;}
+  .subtitle{color:var(--muted);font-size:1rem;margin:0 0 8px;}
+  .instruction{font-size:1.02rem;margin:0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,60,.06);}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .controls .spacer{flex:1;}
+  .scenlabel{font-weight:600;color:var(--muted);}
+  .scenlabel strong{color:var(--ink);}
+  button,select{font:inherit;}
+  select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;min-height:44px;}
+  button{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#fff;
+    padding:9px 16px;border-radius:8px;min-height:44px;font-weight:600;}
+  button:hover{background:var(--accent-dark);}
+  button.secondary{background:#fff;color:var(--accent);}
+  button.secondary:hover{background:var(--soft);}
+  button:disabled{opacity:.55;cursor:default;}
+  button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid #f2b01e;outline-offset:2px;}
+  a.modebtn{display:inline-block;border:1px solid var(--accent);border-radius:8px;padding:9px 14px;
+    min-height:44px;font-weight:600;color:var(--accent);background:#fff;text-decoration:none;line-height:1.45;}
+  a.modebtn:hover{background:var(--soft);}
+  a.modebtn.current{background:var(--accent);color:#fff;}
+  .rawdata{background:var(--soft);border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;font-size:.98rem;margin:6px 0 0;word-break:break-word;}
+  .datalabel{font-weight:600;margin:12px 0 0;}
+  .workarea{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;margin-top:14px;}
+  .tablewrap{flex:0 1 308px;min-width:270px;}
+  .graphwrap{flex:1 1 500px;min-width:320px;}
+  table.freq{border-collapse:collapse;width:100%;font-size:.98rem;}
+  table.freq th,table.freq td{border:1px solid var(--line);padding:7px 9px;text-align:left;}
+  table.freq th{background:var(--soft);}
+  table.freq td.f{text-align:center;font-weight:600;}
+  .relcalc{color:var(--muted);font-size:.9rem;white-space:nowrap;}
+  .tablenote{color:var(--muted);font-size:.9rem;margin:8px 0 0;}
+  .graphwrap h3{margin:0 0 8px;font-size:1.05rem;}
+  svg.chart{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:8px;}
+  .barcol{cursor:ns-resize;touch-action:none;}
+  .barcol.locked{cursor:default;}
+  .ptcol{cursor:ns-resize;touch-action:none;}
+  .ptcol.locked{cursor:default;}
+  .fieldrow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:12px 0 0;}
+  .field{display:flex;flex-direction:column;gap:3px;}
+  .field label{font-size:.85rem;color:var(--muted);font-weight:600;}
+  .field input[type=text]{padding:9px 10px;font:inherit;font-size:1.02rem;border:1px solid var(--line);
+    border-radius:8px;min-height:44px;}
+  .field input.titlein{min-width:280px;}
+  .field input.labelin{width:170px;}
+  .field input.numin{width:96px;}
+  .scalefb{font-weight:600;margin:8px 0 0;min-height:1.3em;}
+  .scalefb.ok{color:var(--ok);}
+  .scalefb.bad{color:var(--bad);}
+  .scalefb.warn{color:#8a5a00;}
+  .steppers{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;}
+  .stepper{border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;gap:6px;align-items:center;background:#fff;}
+  .stepper .binlab{font-weight:600;font-size:.92rem;white-space:nowrap;}
+  .stepper button{min-height:38px;padding:4px 12px;}
+  .toggle{display:flex;gap:8px;align-items:center;margin:12px 0 0;font-weight:600;}
+  .toggle input{width:20px;height:20px;}
+  .checkrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0 0;}
+  .feedback{margin:10px 0 0;}
+  .feedback ul{margin:6px 0 0;padding-left:20px;}
+  .feedback .sumline{font-weight:600;}
+  .feedback.bad .sumline{color:var(--bad);}
+  .feedback.ok .sumline{color:var(--ok);}
+  .panel{border:1px solid var(--ok);background:#f2faf5;border-radius:10px;padding:14px 16px;margin:14px 0 0;}
+  .panel h3{margin:0 0 6px;}
+  .panel p{margin:6px 0;}
+  .rbq{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0 0;background:#fff;}
+  .rbq p{margin:0 0 8px;font-weight:600;}
+  .rbq .feedback{font-weight:600;min-height:1.3em;}
+  .rbq .feedback.ok{color:var(--ok);}
+  .rbq .feedback.bad{color:var(--bad);}
+  .optbtns{display:flex;flex-wrap:wrap;gap:8px;}
+  .hidden{display:none !important;}
+  @media (max-width:860px){
+    .tablewrap,.graphwrap{flex:1 1 100%;min-width:0;}
+    h1{font-size:1.4rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Histogram Builder</h1>
+    <p class="subtitle">Math 2201 · Unit 5 — Statistical Reasoning</p>
+    <p class="instruction" id="modeInstruction">The table is counted for you. The graph is your job: choose the scale, set the bars, label the axis.</p>
+  </header>
+
+  <div class="card controls" role="group" aria-label="Activity controls">
+    <a class="modebtn" id="modeHistLink" href="?mode=histogram">Phase 1 — Histogram</a>
+    <a class="modebtn" id="modePolyLink" href="?mode=polygon">Phase 2 — Frequency polygon</a>
+    <span class="spacer"></span>
+    <button type="button" id="prevBtn" class="secondary">← Previous</button>
+    <span class="scenlabel" id="scenIndicator" aria-live="polite"></span>
+    <button type="button" id="nextBtn">New scenario →</button>
+    <button type="button" id="newDataBtn" class="secondary">New data</button>
+  </div>
+
+  <main class="card">
+    <h2 id="scTitle"></h2>
+    <p id="scContext"></p>
+    <p class="datalabel" id="dataLabel"></p>
+    <p class="rawdata" id="rawData"></p>
+
+    <div class="workarea">
+      <div class="tablewrap">
+        <h3>Frequency table</h3>
+        <table class="freq" id="freqTable" aria-label="Frequency table for this scenario"></table>
+        <p class="tablenote">Each bin includes its left number but not its right number: 0–2 means 0 up to, but not including, 2.</p>
+        <p class="tablenote">Relative frequency is worked out for you — read the calculation in each row. Counting and relative frequency were the previous lesson's skills; this lesson is about the graph.</p>
+      </div>
+
+      <div class="graphwrap">
+        <div class="fieldrow" id="titleRow">
+          <div class="field">
+            <label for="titleInput">Graph title (edit if you like)</label>
+            <input type="text" id="titleInput" class="titlein" autocomplete="off">
+          </div>
+        </div>
+        <svg class="chart" id="chart" viewBox="0 0 660 404" role="img" aria-label="Graph drawing area"></svg>
+
+        <div class="fieldrow" role="group" aria-label="Scale controls">
+          <div class="field">
+            <label for="stepSelect">Scale step (gridline spacing)</label>
+            <select id="stepSelect">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="5">5</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="maxSelect">Axis maximum (top of the vertical axis)</label>
+            <select id="maxSelect"></select>
+          </div>
+          <button type="button" id="setScaleBtn">Set scale</button>
+        </div>
+        <p class="scalefb" id="scaleFeedback" aria-live="polite"></p>
+
+        <div class="fieldrow" id="labelRow">
+          <div class="field">
+            <label for="labelInput">Vertical axis label (you type it)</label>
+            <input type="text" id="labelInput" class="labelin" autocomplete="off" placeholder="Type the label">
+          </div>
+        </div>
+
+        <div class="steppers" id="steppers" role="group" aria-label="Bar height steppers"></div>
+
+        <label class="toggle"><input type="checkbox" id="showValues"> Show my current <span id="showValuesWhat">bar heights</span> as numbers</label>
+
+        <div class="checkrow">
+          <button type="button" id="checkBtn">Check my graph</button>
+        </div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+
+        <div class="panel hidden" id="successPanel"></div>
+        <div id="readbackPanel" class="hidden"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+"use strict";
+// ==GENERATOR==
+// Pure generator / checker logic for HistogramBuilder. No DOM access in this section.
+
+function randInt(min, max) { // inclusive
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+function shuffleArr(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+var SCALE_STEPS = [1, 2, 5, 10];
+
+// Ten scenarios. Bins are equal width, lower bound included / upper excluded.
+// weights shape the distribution; sampleCounts then adjusts so the peak bin
+// frequency lands inside [peakMin, peakMax] and no bin is empty, so the right
+// scale decision differs from scenario to scenario.
+var SCENARIOS = [
+  { id: "study", title: "Hours Studied for a Test", noun: "students",
+    context: "Students in a Math 2201 class recorded how many hours they studied for the last test.",
+    dataWhat: "hours studied, one value per student",
+    xLabel: "Hours studied", unitSuffix: "hours",
+    start: 0, width: 2, bins: 6, nMin: 24, nMax: 32, peakMin: 7, peakMax: 10,
+    weights: [2, 4, 6, 5, 3, 1] },
+  { id: "sleep", title: "Hours of Sleep Last Night", noun: "students",
+    context: "Students recorded how many hours they slept last night.",
+    dataWhat: "hours of sleep, one value per student",
+    xLabel: "Hours of sleep", unitSuffix: "hours",
+    start: 4, width: 1, bins: 6, nMin: 26, nMax: 36, peakMin: 8, peakMax: 12,
+    weights: [1, 3, 6, 6, 4, 2] },
+  { id: "bus", title: "Bus Wait Times", noun: "riders",
+    context: "Riders at a bus stop recorded how long they waited for the bus, in minutes.",
+    dataWhat: "wait time in minutes, one value per rider",
+    xLabel: "Wait time (min)", unitSuffix: "min",
+    start: 0, width: 5, bins: 6, nMin: 26, nMax: 36, peakMin: 9, peakMax: 13,
+    weights: [7, 6, 4, 3, 2, 1] },
+  { id: "goals", title: "Goals per Game", noun: "games",
+    context: "A hockey team recorded how many goals it scored in each game of a season.",
+    dataWhat: "goals scored, one value per game",
+    xLabel: "Goals scored", unitSuffix: "goals",
+    start: 0, width: 1, bins: 6, nMin: 30, nMax: 40, peakMin: 10, peakMax: 14,
+    weights: [4, 7, 6, 4, 2, 1] },
+  { id: "books", title: "Books Read in a Month", noun: "students",
+    context: "Students recorded how many books they read last month.",
+    dataWhat: "books read, one value per student",
+    xLabel: "Books read", unitSuffix: "books",
+    start: 0, width: 1, bins: 5, nMin: 20, nMax: 30, peakMin: 7, peakMax: 11,
+    weights: [6, 5, 4, 2, 1] },
+  { id: "pushups", title: "Push-Ups in One Minute", noun: "students",
+    context: "In a fitness test, students counted how many push-ups they could do in one minute.",
+    dataWhat: "push-ups completed, one value per student",
+    xLabel: "Push-ups", unitSuffix: "push-ups",
+    start: 0, width: 10, bins: 6, nMin: 24, nMax: 34, peakMin: 7, peakMax: 11,
+    weights: [1, 3, 5, 5, 3, 1] },
+  { id: "screen", title: "Daily Screen Time", noun: "teens",
+    context: "Teens recorded their recreational screen time on a school day, in hours.",
+    dataWhat: "screen time in hours, one value per teen",
+    xLabel: "Screen time (hours)", unitSuffix: "hours",
+    start: 0, width: 1, bins: 8, nMin: 28, nMax: 40, peakMin: 6, peakMax: 10,
+    weights: [1, 2, 4, 5, 5, 4, 2, 1] },
+  { id: "seedlings", title: "Seedling Heights After Two Weeks", noun: "plants",
+    context: "A science class measured the heights of bean seedlings two weeks after planting, in centimetres.",
+    dataWhat: "height in centimetres, one value per plant",
+    xLabel: "Height (cm)", unitSuffix: "cm",
+    start: 6, width: 2, bins: 7, nMin: 21, nMax: 32, peakMin: 6, peakMax: 9,
+    weights: [1, 2, 4, 5, 4, 2, 1] },
+  { id: "texts", title: "Text Messages Sent in an Evening", noun: "students",
+    context: "Students recorded how many text messages they sent last evening.",
+    dataWhat: "text messages sent, one value per student",
+    xLabel: "Text messages sent", unitSuffix: "messages",
+    start: 0, width: 20, bins: 6, nMin: 30, nMax: 40, peakMin: 11, peakMax: 16,
+    weights: [8, 7, 5, 3, 2, 1] },
+  { id: "commute", title: "Travel Time to School", noun: "students",
+    context: "Students recorded how long it takes them to get to school, in minutes.",
+    dataWhat: "travel time in minutes, one value per student",
+    xLabel: "Travel time (min)", unitSuffix: "min",
+    start: 0, width: 5, bins: 7, nMin: 25, nMax: 35, peakMin: 6, peakMax: 10,
+    weights: [2, 5, 6, 5, 3, 2, 1] }
+];
+
+function binLabel(lo, hi) { return lo + "–" + hi; }
+
+// Count raw values into bins (lower bound included, upper excluded).
+function countData(values, sc) {
+  var counts = [];
+  for (var i = 0; i < sc.bins; i++) counts.push(0);
+  values.forEach(function (v) {
+    var idx = Math.floor((v - sc.start) / sc.width);
+    if (idx < 0) idx = 0;
+    if (idx > sc.bins - 1) idx = sc.bins - 1;
+    counts[idx]++;
+  });
+  return counts;
+}
+
+// Draw bin counts from the scenario's weights, then adjust so that:
+//  - no bin is empty, and
+//  - the peak (largest) bin frequency sits inside [peakMin, peakMax].
+function sampleCounts(sc) {
+  var total = randInt(sc.nMin, sc.nMax);
+  var counts = sc.weights.map(function () { return 0; });
+  var wsum = sc.weights.reduce(function (a, b) { return a + b; }, 0);
+  for (var n = 0; n < total; n++) {
+    var r = Math.random() * wsum, b = 0;
+    while (r >= sc.weights[b]) { r -= sc.weights[b]; b++; }
+    counts[b]++;
+  }
+  function peakOf() { return Math.max.apply(null, counts); }
+  function argMax() { return counts.indexOf(peakOf()); }
+  function argMin() { return counts.indexOf(Math.min.apply(null, counts)); }
+  var i, guard;
+  for (i = 0; i < counts.length; i++) {
+    if (counts[i] === 0) {
+      var src = argMax();
+      if (counts[src] > 1) { counts[src]--; counts[i]++; }
+    }
+  }
+  guard = 0;
+  while (peakOf() > sc.peakMax && guard++ < 1000) {
+    var from = argMax(), to = argMin();
+    if (to === from) break;
+    counts[from]--; counts[to]++;
+  }
+  guard = 0;
+  while (peakOf() < sc.peakMin && guard++ < 1000) {
+    var peakBin = argMax(), src2 = -1;
+    for (i = 0; i < counts.length; i++) {
+      if (i !== peakBin && counts[i] >= 2 && (src2 < 0 || counts[i] > counts[src2])) src2 = i;
+    }
+    if (src2 < 0) break;
+    counts[src2]--; counts[peakBin]++;
+  }
+  return { total: total, counts: counts };
+}
+
+// A fresh instance of a scenario: raw values plus the table counted from them.
+function generateInstance(scIndex) {
+  var sc = SCENARIOS[scIndex];
+  var sampled = sampleCounts(sc);
+  var values = [];
+  sampled.counts.forEach(function (c, i) {
+    var lo = sc.start + i * sc.width;
+    for (var k = 0; k < c; k++) values.push(lo + randInt(0, sc.width - 1));
+  });
+  shuffleArr(values);
+  var bins = [];
+  for (var i = 0; i < sc.bins; i++) {
+    var blo = sc.start + i * sc.width;
+    bins.push({ lo: blo, hi: blo + sc.width, label: binLabel(blo, blo + sc.width) });
+  }
+  var frequencies = countData(values, sc);
+  var total = values.length;
+  var peak = Math.max.apply(null, frequencies);
+  return { scenarioIndex: scIndex, scenario: sc, values: values, bins: bins,
+           frequencies: frequencies, total: total, peak: peak };
+}
+
+// Relative frequency, as a worked line: "7 ÷ 24 ≈ 29.2%".
+function relFreqPercent(f, total) {
+  return (Math.round((f / total) * 1000) / 10).toFixed(1);
+}
+function relFreqLine(f, total) {
+  return f + " ÷ " + total + " ≈ " + relFreqPercent(f, total) + "%";
+}
+
+// The smallest axis maximum, a whole number of steps, that fits a bar of height peak.
+function smallestFittingMax(step, peak) {
+  return Math.ceil(peak / step) * step;
+}
+
+// Validate a student's chosen scale against the tallest bar they must draw.
+// status: "invalid" | "doesntfit" | "wasteful" | "works". ok = the scale can be used.
+function validateScale(step, max, peak) {
+  if (SCALE_STEPS.indexOf(step) < 0 || !(max > 0) || max % step !== 0) {
+    return { ok: false, status: "invalid",
+      message: "Pick a step of 1, 2, 5, or 10, and an axis maximum that is a whole number of steps." };
+  }
+  if (max < peak) {
+    return { ok: false, status: "doesntfit",
+      message: "That scale doesn't fit — your tallest bar runs off the top. Raise the axis maximum, or pick a bigger step and maximum." };
+  }
+  if (max > 2.5 * peak) {
+    return { ok: true, status: "wasteful", warning: true,
+      message: "That scale works, but it wastes most of the axis — the bars will huddle down at the bottom. A smaller axis maximum would be easier to read." };
+  }
+  return { ok: true, status: "works", message: "That scale works." };
+}
+
+// Per-bar / per-point check: "correct" | "tall" | "short" — never the numeric answer.
+function checkHeights(heights, frequencies) {
+  return frequencies.map(function (f, i) {
+    if (heights[i] === f) return "correct";
+    return heights[i] > f ? "tall" : "short";
+  });
+}
+
+// Two read-back questions generated from the student's own scenario instance.
+// Keys are computed from the instance's frequencies only.
+function makeReadBack(inst) {
+  var sc = inst.scenario, f = inst.frequencies, bins = inst.bins, n = f.length;
+  var k = randInt(1, n - 2);
+  var above = 0, i;
+  for (i = k; i < n; i++) above += f[i];
+  var q1 = { kind: "above", binFrom: k, answer: above,
+    text: "How many " + sc.noun + " are in the bins above " + bins[k].lo + " " + sc.unitSuffix + "?" };
+  var pair = null;
+  for (var tries = 0; tries < 200 && !pair; tries++) {
+    var a = randInt(0, n - 2), b = randInt(a + 1, n - 1);
+    if (f[a] !== f[b]) pair = [a, b];
+  }
+  var q2;
+  if (pair) {
+    q2 = { kind: "compare", bins: pair, answerBin: f[pair[0]] > f[pair[1]] ? pair[0] : pair[1],
+      text: "Which bin has the greater total: " + bins[pair[0]].label + ", or " + bins[pair[1]].label + "?" };
+  } else {
+    var c = randInt(0, n - 2);
+    q2 = { kind: "combined", bins: [c, c + 1], answer: f[c] + f[c + 1],
+      text: "How many " + sc.noun + " are in the " + bins[c].label + " and " + bins[c + 1].label + " bins combined?" };
+  }
+  return [q1, q2];
+}
+// ==END GENERATOR==
+
+// ---- UI ----
+
+var params = new URLSearchParams(window.location.search);
+var MODE = params.get("mode") === "polygon" ? "polygon" : "histogram";
+var startScen = parseInt(params.get("s") || "1", 10);
+if (!(startScen >= 1 && startScen <= SCENARIOS.length)) startScen = 1;
+
+var scenIndex = startScen - 1;
+var inst = null;            // current scenario instance (from the generator)
+var readBack = null;        // read-back questions for this instance
+var rbDone = [false, false];
+var scale = null;           // {step, max} once set
+var heights = [];           // student's current bar heights (Phase 1) or point heights (Phase 2)
+var locked = [];            // per-bin: checked correct and locked
+var wrongMark = [];         // per-bin: null | "tall" | "short" from the last check
+var finished = false;
+
+var scenIndicator = document.getElementById("scenIndicator");
+var prevBtn = document.getElementById("prevBtn");
+var nextBtn = document.getElementById("nextBtn");
+var newDataBtn = document.getElementById("newDataBtn");
+var modeHistLink = document.getElementById("modeHistLink");
+var modePolyLink = document.getElementById("modePolyLink");
+var modeInstruction = document.getElementById("modeInstruction");
+var scTitle = document.getElementById("scTitle");
+var scContext = document.getElementById("scContext");
+var dataLabel = document.getElementById("dataLabel");
+var rawDataEl = document.getElementById("rawData");
+var freqTable = document.getElementById("freqTable");
+var chart = document.getElementById("chart");
+var titleRow = document.getElementById("titleRow");
+var titleInput = document.getElementById("titleInput");
+var labelRow = document.getElementById("labelRow");
+var labelInput = document.getElementById("labelInput");
+var stepSelect = document.getElementById("stepSelect");
+var maxSelect = document.getElementById("maxSelect");
+var setScaleBtn = document.getElementById("setScaleBtn");
+var scaleFeedback = document.getElementById("scaleFeedback");
+var steppersEl = document.getElementById("steppers");
+var showValues = document.getElementById("showValues");
+var showValuesWhat = document.getElementById("showValuesWhat");
+var checkBtn = document.getElementById("checkBtn");
+var feedbackEl = document.getElementById("feedback");
+var successPanel = document.getElementById("successPanel");
+var readbackPanel = document.getElementById("readbackPanel");
+
+function escapeHTML(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ---- Chart geometry ----
+var SVG_W = 660, SVG_H = 404;
+var ML = 56, MR = 14, MT = 30, MB = 54;
+var PLOT_W = SVG_W - ML - MR, PLOT_H = SVG_H - MT - MB;
+var BASE_Y = MT + PLOT_H;
+
+function binCount() { return inst.bins.length; }
+function colW() { return PLOT_W / (binCount() + (MODE === "polygon" ? 2 : 0)); }
+function colX(i) { return ML + (MODE === "polygon" ? colW() : 0) + i * colW(); } // left edge of bin i's column
+function midX(i) { return colX(i) + colW() / 2; }
+function yFor(v) { return BASE_Y - (v / scale.max) * PLOT_H; }
+
+function axisTitleText() {
+  if (MODE === "polygon") return inst.scenario.title;
+  return titleInput.value.trim() || inst.scenario.title;
+}
+function yAxisLabelText() {
+  if (MODE === "polygon") return "Frequency";
+  return labelInput.value.trim();
+}
+
+function renderChart() {
+  var sc = inst.scenario, n = binCount();
+  var out = [];
+  out.push("<defs><clipPath id=\"plotclip\"><rect x=\"" + ML + "\" y=\"" + (MT - 6) +
+    "\" width=\"" + PLOT_W + "\" height=\"" + (PLOT_H + 6) + "\"></rect></clipPath></defs>");
+  // Graph title
+  out.push("<text x=\"" + (SVG_W / 2) + "\" y=\"20\" text-anchor=\"middle\" font-size=\"16\" font-weight=\"700\" fill=\"#1c2430\">" +
+    escapeHTML(axisTitleText()) + "</text>");
+
+  if (!scale) {
+    // No scale yet: baseline and bin edges only, with a prompt.
+    out.push("<line x1=\"" + ML + "\" y1=\"" + BASE_Y + "\" x2=\"" + (ML + PLOT_W) + "\" y2=\"" + BASE_Y + "\" stroke=\"#1c2430\" stroke-width=\"1.5\"></line>");
+    for (var e = 0; e <= n; e++) {
+      var bx = (e < n) ? colX(e) : colX(n - 1) + colW();
+      out.push("<text x=\"" + bx + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"12\" fill=\"#1c2430\">" +
+        (sc.start + e * sc.width) + "</text>");
+    }
+    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
+      escapeHTML(sc.xLabel) + "</text>");
+    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"14\" fill=\"#5a6572\">Choose a scale below to draw the axes.</text>");
+    chart.innerHTML = out.join("");
+    return;
+  }
+
+  // Gridlines and vertical axis labels
+  for (var v = 0; v <= scale.max; v += scale.step) {
+    var gy = yFor(v);
+    out.push("<line x1=\"" + ML + "\" y1=\"" + gy + "\" x2=\"" + (ML + PLOT_W) + "\" y2=\"" + gy +
+      "\" stroke=\"" + (v === 0 ? "#1c2430" : "#d4dce4") + "\" stroke-width=\"" + (v === 0 ? 1.5 : 1) + "\"></line>");
+    out.push("<text x=\"" + (ML - 8) + "\" y=\"" + (gy + 4) + "\" text-anchor=\"end\" font-size=\"12\" fill=\"#1c2430\">" + v + "</text>");
+  }
+  // Vertical axis line
+  out.push("<line x1=\"" + ML + "\" y1=\"" + MT + "\" x2=\"" + ML + "\" y2=\"" + BASE_Y + "\" stroke=\"#1c2430\" stroke-width=\"1.5\"></line>");
+  // Vertical axis label (student's own text in Phase 1 — updates as they type)
+  var yl = yAxisLabelText();
+  if (yl) {
+    out.push("<text x=\"16\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"600\" fill=\"#1c2430\" transform=\"rotate(-90 16 " +
+      (MT + PLOT_H / 2) + ")\">" + escapeHTML(yl) + "</text>");
+  }
+  // Bin edge labels
+  for (var e2 = 0; e2 <= n; e2++) {
+    var bx2 = (e2 < n) ? colX(e2) : colX(n - 1) + colW();
+    out.push("<text x=\"" + bx2 + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"12\" fill=\"#1c2430\">" +
+      (sc.start + e2 * sc.width) + "</text>");
+  }
+  out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
+    escapeHTML(sc.xLabel) + "</text>");
+
+  var bw = colW();
+  if (MODE === "polygon") {
+    // The histogram they built, shown faintly underneath.
+    out.push("<g clip-path=\"url(#plotclip)\">");
+    for (var b = 0; b < n; b++) {
+      out.push("<rect x=\"" + (colX(b) + 1) + "\" y=\"" + yFor(inst.frequencies[b]) + "\" width=\"" + (bw - 2) +
+        "\" height=\"" + (BASE_Y - yFor(inst.frequencies[b])) + "\" fill=\"#dbe7f3\" stroke=\"#9db8d4\" stroke-dasharray=\"4 3\"></rect>");
+    }
+    out.push("</g>");
+    // Extension points: one bin width beyond each end, on the axis.
+    var extL = midX(0) - bw, extR = midX(n - 1) + bw;
+    var pts = extL + "," + BASE_Y;
+    for (var p = 0; p < n; p++) pts += " " + midX(p) + "," + yFor(heights[p]);
+    pts += " " + extR + "," + BASE_Y;
+    out.push("<polyline points=\"" + pts + "\" fill=\"none\" stroke=\"#0b5cad\" stroke-width=\"2.5\"></polyline>");
+    out.push("<circle cx=\"" + extL + "\" cy=\"" + BASE_Y + "\" r=\"4\" fill=\"#0b5cad\"></circle>");
+    out.push("<circle cx=\"" + extR + "\" cy=\"" + BASE_Y + "\" r=\"4\" fill=\"#0b5cad\"></circle>");
+    for (var q = 0; q < n; q++) {
+      var cx = midX(q), cy = yFor(heights[q]);
+      out.push("<rect class=\"ptcol" + (locked[q] ? " locked" : "") + "\" data-bin=\"" + q + "\" x=\"" + (cx - bw / 2) + "\" y=\"" + MT +
+        "\" width=\"" + bw + "\" height=\"" + PLOT_H + "\" fill=\"transparent\"></rect>");
+      out.push("<circle cx=\"" + cx + "\" cy=\"" + cy + "\" r=\"7\" fill=\"" + (locked[q] ? "#177245" : "#0b5cad") +
+        "\" stroke=\"#ffffff\" stroke-width=\"2\"></circle>");
+      if (locked[q]) {
+        out.push("<text x=\"" + cx + "\" y=\"" + (cy - 13) + "\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"700\" fill=\"#177245\">✓</text>");
+      } else if (wrongMark[q]) {
+        out.push("<text x=\"" + cx + "\" y=\"" + (cy - 13) + "\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#b3261e\">✗</text>");
+      }
+      if (showValues.checked) {
+        out.push("<text x=\"" + cx + "\" y=\"" + (cy + 24) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#1c2430\">" + heights[q] + "</text>");
+      }
+    }
+  } else {
+    // Histogram bars (clipped so an over-tall bar visibly runs off the top).
+    out.push("<g clip-path=\"url(#plotclip)\">");
+    for (var b2 = 0; b2 < n; b2++) {
+      var bh = heights[b2], by = yFor(bh);
+      out.push("<rect x=\"" + (colX(b2) + 1) + "\" y=\"" + by + "\" width=\"" + (bw - 2) + "\" height=\"" + (BASE_Y - by) +
+        "\" fill=\"" + (locked[b2] ? "#177245" : "#0b5cad") + "\" fill-opacity=\"0.85\" stroke=\"" + (locked[b2] ? "#0f5132" : "#084a8a") + "\"></rect>");
+    }
+    out.push("</g>");
+    for (var b3 = 0; b3 < n; b3++) {
+      var topY = Math.max(yFor(heights[b3]), MT + 2);
+      out.push("<rect class=\"barcol" + (locked[b3] ? " locked" : "") + "\" data-bin=\"" + b3 +
+        "\" tabindex=\"" + (locked[b3] ? "-1" : "0") + "\" role=\"slider\" aria-label=\"Bar for bin " + inst.bins[b3].label +
+        ". Use the up and down arrow keys to change its height.\" aria-valuemin=\"0\" aria-valuemax=\"" + scale.max +
+        "\" aria-valuenow=\"" + heights[b3] + "\" x=\"" + colX(b3) + "\" y=\"" + MT + "\" width=\"" + bw + "\" height=\"" + PLOT_H + "\" fill=\"transparent\"></rect>");
+      if (locked[b3]) {
+        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY + 18) + "\" text-anchor=\"middle\" font-size=\"16\" font-weight=\"700\" fill=\"#ffffff\">✓</text>");
+      } else if (wrongMark[b3]) {
+        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY + 18) + "\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"700\" fill=\"#b3261e\">✗</text>");
+      }
+      if (showValues.checked && heights[b3] > 0) {
+        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY - 6) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#1c2430\">" + heights[b3] + "</text>");
+      }
+    }
+  }
+  chart.innerHTML = out.join("");
+  attachDragHandlers();
+}
+
+// ---- Frequency table (pinned beside the graph for the whole activity) ----
+
+function renderTable() {
+  var sc = inst.scenario;
+  var rows = ["<tr><th scope=\"col\">" + escapeHTML(sc.xLabel) + "</th><th scope=\"col\">Frequency</th><th scope=\"col\">Relative frequency</th></tr>"];
+  inst.bins.forEach(function (b, i) {
+    rows.push("<tr><td>" + b.label + "</td><td class=\"f\">" + inst.frequencies[i] +
+      "</td><td><span class=\"relcalc\">" + relFreqLine(inst.frequencies[i], inst.total) + "</span></td></tr>");
+  });
+  rows.push("<tr><td><strong>Total</strong></td><td class=\"f\">" + inst.total + "</td><td></td></tr>");
+  freqTable.innerHTML = rows.join("");
+}
+
+// ---- Steppers (keyboard-operable alternative to dragging) ----
+
+function renderSteppers() {
+  steppersEl.innerHTML = "";
+  inst.bins.forEach(function (b, i) {
+    var wrap = document.createElement("div");
+    wrap.className = "stepper";
+    var lab = document.createElement("span");
+    lab.className = "binlab";
+    lab.textContent = (MODE === "polygon" ? "Point " : "Bar ") + b.label;
+    var down = document.createElement("button");
+    down.type = "button";
+    down.textContent = "−";
+    down.setAttribute("aria-label", "Lower the " + (MODE === "polygon" ? "point" : "bar") + " for " + b.label + " by 1");
+    var up = document.createElement("button");
+    up.type = "button";
+    up.textContent = "+";
+    up.setAttribute("aria-label", "Raise the " + (MODE === "polygon" ? "point" : "bar") + " for " + b.label + " by 1");
+    var dis = !scale || locked[i] || finished;
+    down.disabled = dis; up.disabled = dis;
+    down.addEventListener("click", function () { setHeight(i, heights[i] - 1); });
+    up.addEventListener("click", function () { setHeight(i, heights[i] + 1); });
+    wrap.appendChild(lab);
+    wrap.appendChild(down);
+    wrap.appendChild(up);
+    steppersEl.appendChild(wrap);
+  });
+}
+
+function setHeight(i, v) {
+  if (!scale || locked[i] || finished) return;
+  v = Math.max(0, Math.min(scale.max, v));
+  if (v === heights[i]) return;
+  heights[i] = v;
+  wrongMark[i] = null;
+  renderChart();
+  renderSteppers();
+}
+
+// ---- Dragging (pointer events on the bar / point columns) ----
+
+function attachDragHandlers() {
+  var cols = chart.querySelectorAll(".barcol, .ptcol");
+  cols.forEach(function (col) {
+    col.addEventListener("pointerdown", function (ev) {
+      var bin = parseInt(col.getAttribute("data-bin"), 10);
+      if (locked[bin] || finished || !scale) return;
+      ev.preventDefault();
+      col.setPointerCapture(ev.pointerId);
+      dragTo(bin, ev);
+      function move(e2) { dragTo(bin, e2); }
+      function up() {
+        col.removeEventListener("pointermove", move);
+        col.removeEventListener("pointerup", up);
+        col.removeEventListener("pointercancel", up);
+      }
+      col.addEventListener("pointermove", move);
+      col.addEventListener("pointerup", up);
+      col.addEventListener("pointercancel", up);
+    });
+    col.addEventListener("keydown", function (ev) {
+      var bin = parseInt(col.getAttribute("data-bin"), 10);
+      if (ev.key === "ArrowUp" || ev.key === "ArrowRight") { ev.preventDefault(); setHeight(bin, heights[bin] + 1); }
+      else if (ev.key === "ArrowDown" || ev.key === "ArrowLeft") { ev.preventDefault(); setHeight(bin, heights[bin] - 1); }
+    });
+  });
+}
+
+function dragTo(bin, ev) {
+  var rect = chart.getBoundingClientRect();
+  var y = (ev.clientY - rect.top) * (SVG_H / rect.height);
+  var v = Math.round(((BASE_Y - y) / PLOT_H) * scale.max);
+  setHeight(bin, v);
+}
+
+// ---- Scale controls ----
+
+function fillMaxOptions() {
+  var step = parseInt(stepSelect.value, 10);
+  var cur = parseInt(maxSelect.value || "0", 10);
+  maxSelect.innerHTML = "";
+  for (var m = step; m <= 60; m += step) {
+    var opt = document.createElement("option");
+    opt.value = String(m);
+    opt.textContent = String(m);
+    maxSelect.appendChild(opt);
+  }
+  if (cur > 0 && cur % step === 0 && cur <= 60) maxSelect.value = String(cur);
+}
+
+function setScaleFeedback(res) {
+  scaleFeedback.textContent = res ? res.message : "";
+  scaleFeedback.className = "scalefb " + (res ? (res.status === "works" ? "ok" : res.status === "wasteful" ? "warn" : "bad") : "");
+}
+
+function applyScale(fromStudent) {
+  var step = parseInt(stepSelect.value, 10);
+  var max = parseInt(maxSelect.value, 10);
+  var res = validateScale(step, max, inst.peak);
+  scale = { step: step, max: max };
+  setScaleFeedback(res);
+  heights = heights.map(function (h) { return Math.min(h, max); });
+  renderChart();
+  renderSteppers();
+  return res;
+}
+
+// ---- Checking ----
+
+function showFeedback(lines, ok) {
+  feedbackEl.innerHTML = "";
+  feedbackEl.className = "feedback " + (ok ? "ok" : "bad");
+  if (!lines.length) return;
+  var sum = document.createElement("p");
+  sum.className = "sumline";
+  sum.textContent = lines[0];
+  feedbackEl.appendChild(sum);
+  if (lines.length > 1) {
+    var ul = document.createElement("ul");
+    lines.slice(1).forEach(function (t) {
+      var li = document.createElement("li");
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    feedbackEl.appendChild(ul);
+  }
+}
+
+function checkGraph() {
+  if (finished) return;
+  if (!scale) {
+    showFeedback(["Choose a scale first — pick a step and an axis maximum, then choose Set scale."], false);
+    return;
+  }
+  var lines = [];
+  var res = checkHeights(heights, inst.frequencies);
+  var nCorrect = 0;
+  res.forEach(function (r, i) {
+    if (r === "correct") { locked[i] = true; wrongMark[i] = null; nCorrect++; }
+    else wrongMark[i] = r;
+  });
+  var unit = MODE === "polygon" ? "point" : "bar";
+  var problems = [];
+  res.forEach(function (r, i) {
+    if (r === "tall") problems.push("The " + unit + " for " + inst.bins[i].label + " is too tall — lower it a bit.");
+    else if (r === "short") problems.push("The " + unit + " for " + inst.bins[i].label + " is too short — raise it a bit.");
+  });
+
+  var scaleRes = validateScale(scale.step, scale.max, inst.peak);
+  if (!scaleRes.ok) problems.unshift(scaleRes.message);
+
+  var labelOk = true;
+  if (MODE === "histogram") {
+    var lab = labelInput.value.trim().toLowerCase().replace(/\.$/, "");
+    if (!lab) { labelOk = false; problems.push("Add a label for the vertical axis — what do the bar heights count?"); }
+    else if (lab !== "frequency") { labelOk = false; problems.push("The vertical axis label isn't right yet. The bar heights count how many values fall in each bin — one word names that count."); }
+    if (!titleInput.value.trim()) problems.push("Give the graph a title.");
+  }
+
+  renderChart();
+  renderSteppers();
+
+  if (problems.length === 0 && nCorrect === binCount()) {
+    finished = true;
+    renderSteppers();
+    showFeedback([], true);
+    showSuccess();
+    return;
+  }
+  var head;
+  if (nCorrect === binCount()) head = "Every " + unit + " matches the table.";
+  else head = nCorrect + " of " + binCount() + " " + unit + "s match the table so far.";
+  if (scaleRes.ok && scaleRes.warning) problems.push(scaleRes.message);
+  showFeedback([head].concat(problems), false);
+}
+
+function showSuccess() {
+  successPanel.innerHTML = "";
+  var h = document.createElement("h3");
+  var p1 = document.createElement("p");
+  var p2 = document.createElement("p");
+  if (MODE === "histogram") {
+    h.textContent = "You built the histogram";
+    p1.textContent = "Every bar matches the frequency table, on a scale you chose. That is the whole skill of this lesson: the table gives the counts, and the decisions — scale, bar heights, labels — were yours.";
+    p2.textContent = "Now sketch the frequency polygon for this table on paper: plot each bin's midpoint at its frequency and connect the points. Phase 2 of this activity works it on screen.";
+    var link = document.createElement("p");
+    var a = document.createElement("a");
+    a.className = "modebtn";
+    a.href = "?mode=polygon&s=" + (scenIndex + 1);
+    a.textContent = "Open Phase 2 — frequency polygon";
+    link.appendChild(a);
+    successPanel.appendChild(h);
+    successPanel.appendChild(p1);
+    successPanel.appendChild(p2);
+    successPanel.appendChild(link);
+    successPanel.classList.remove("hidden");
+    buildReadBack();
+  } else {
+    h.textContent = "You built the frequency polygon";
+    p1.textContent = "Every point sits over its bin's midpoint at that bin's frequency, and the line drops to the axis at both ends — that is the whole shape of a frequency polygon.";
+    p2.textContent = "Try another scenario, or head back to Phase 1 and build the histogram that goes with it.";
+    successPanel.appendChild(h);
+    successPanel.appendChild(p1);
+    successPanel.appendChild(p2);
+    successPanel.classList.remove("hidden");
+  }
+}
+
+// ---- Read-back (Phase 1, after a successful build) ----
+
+function buildReadBack() {
+  readbackPanel.innerHTML = "";
+  rbDone = [false, false];
+  var intro = document.createElement("p");
+  intro.className = "datalabel";
+  intro.textContent = "Now read your own graph — answer from the histogram you just built (the table is still beside it):";
+  readbackPanel.appendChild(intro);
+  readBack.forEach(function (q, qi) {
+    var box = document.createElement("div");
+    box.className = "rbq";
+    var qp = document.createElement("p");
+    qp.textContent = (qi + 1) + ". " + q.text;
+    box.appendChild(qp);
+    var fb = document.createElement("p");
+    fb.className = "feedback";
+    fb.setAttribute("aria-live", "polite");
+    if (q.kind === "compare") {
+      var btns = document.createElement("div");
+      btns.className = "optbtns";
+      q.bins.forEach(function (bi) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "secondary";
+        b.textContent = inst.bins[bi].label;
+        b.addEventListener("click", function () {
+          if (rbDone[qi]) return;
+          if (bi === q.answerBin) {
+            rbDone[qi] = true;
+            fb.className = "feedback ok";
+            fb.textContent = "✓ That's right — read it straight off your graph.";
+            btns.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+            maybeFinishReadBack();
+          } else {
+            fb.className = "feedback bad";
+            fb.textContent = "✗ Not that one — compare the two bar heights on your graph.";
+          }
+        });
+        btns.appendChild(b);
+      });
+      box.appendChild(btns);
+    } else {
+      var row = document.createElement("div");
+      row.className = "fieldrow";
+      var fld = document.createElement("div");
+      fld.className = "field";
+      var lab = document.createElement("label");
+      lab.textContent = "Your answer";
+      lab.setAttribute("for", "rb-in-" + qi);
+      var inp = document.createElement("input");
+      inp.type = "text";
+      inp.inputMode = "numeric";
+      inp.autocomplete = "off";
+      inp.id = "rb-in-" + qi;
+      inp.className = "numin";
+      fld.appendChild(lab);
+      fld.appendChild(inp);
+      var chk = document.createElement("button");
+      chk.type = "button";
+      chk.textContent = "Check";
+      chk.addEventListener("click", function () {
+        if (rbDone[qi]) return;
+        var v = inp.value.trim();
+        if (!/^\d+$/.test(v)) {
+          fb.className = "feedback bad";
+          fb.textContent = "Enter a whole number.";
+          return;
+        }
+        if (parseInt(v, 10) === q.answer) {
+          rbDone[qi] = true;
+          fb.className = "feedback ok";
+          fb.textContent = "✓ That's right — read it straight off your graph.";
+          inp.disabled = true; chk.disabled = true;
+          maybeFinishReadBack();
+        } else {
+          fb.className = "feedback bad";
+          fb.textContent = "✗ Not quite — add up the bar heights on your graph and try again.";
+        }
+      });
+      row.appendChild(fld);
+      row.appendChild(chk);
+      box.appendChild(row);
+    }
+    box.appendChild(fb);
+    readbackPanel.appendChild(box);
+  });
+  readbackPanel.classList.remove("hidden");
+}
+
+function maybeFinishReadBack() {
+  if (rbDone[0] && rbDone[1]) {
+    var p = document.createElement("p");
+    p.className = "datalabel";
+    p.textContent = "Both answers read off your own graph — that's the interpretation skill. Try a new scenario, or move on to Phase 2.";
+    readbackPanel.appendChild(p);
+  }
+}
+
+// ---- Scenario loading / navigation ----
+
+function loadScenario(idx) {
+  scenIndex = ((idx % SCENARIOS.length) + SCENARIOS.length) % SCENARIOS.length;
+  inst = generateInstance(scenIndex);
+  readBack = makeReadBack(inst);
+  rbDone = [false, false];
+  finished = false;
+  heights = inst.bins.map(function () { return 0; });
+  locked = inst.bins.map(function () { return false; });
+  wrongMark = inst.bins.map(function () { return null; });
+
+  scenIndicator.innerHTML = "Scenario <strong>" + (scenIndex + 1) + "</strong> of <strong>" + SCENARIOS.length + "</strong>";
+  prevBtn.disabled = scenIndex === 0;
+  modeHistLink.href = "?mode=histogram&s=" + (scenIndex + 1);
+  modePolyLink.href = "?mode=polygon&s=" + (scenIndex + 1);
+  modeHistLink.className = "modebtn" + (MODE === "histogram" ? " current" : "");
+  modePolyLink.className = "modebtn" + (MODE === "polygon" ? " current" : "");
+
+  scTitle.textContent = inst.scenario.title;
+  scContext.textContent = inst.scenario.context;
+  dataLabel.textContent = "The data (" + inst.scenario.dataWhat + ") — " + inst.total + " values:";
+  rawDataEl.textContent = inst.values.join(", ");
+  titleInput.value = inst.scenario.title;
+  labelInput.value = "";
+  showValues.checked = false;
+  feedbackEl.innerHTML = "";
+  successPanel.classList.add("hidden");
+  successPanel.innerHTML = "";
+  readbackPanel.classList.add("hidden");
+  readbackPanel.innerHTML = "";
+
+  renderTable();
+  fillMaxOptions();
+
+  if (MODE === "polygon") {
+    // Phase 2 starts on a workable scale so the faint histogram shows at once;
+    // the student can still change it and gets the same validation.
+    var step = 1;
+    for (var si = 0; si < SCALE_STEPS.length; si++) {
+      step = SCALE_STEPS[si];
+      if (smallestFittingMax(step, inst.peak) / step <= 12) break;
+    }
+    stepSelect.value = String(step);
+    fillMaxOptions();
+    maxSelect.value = String(smallestFittingMax(step, inst.peak));
+    applyScale(false);
+  } else {
+    scale = null;
+    stepSelect.value = "1";
+    fillMaxOptions();
+    setScaleFeedback(null);
+    renderChart();
+    renderSteppers();
+  }
+}
+
+// ---- Events ----
+
+stepSelect.addEventListener("change", fillMaxOptions);
+setScaleBtn.addEventListener("click", function () { if (!finished) applyScale(true); });
+checkBtn.addEventListener("click", checkGraph);
+showValues.addEventListener("change", renderChart);
+titleInput.addEventListener("input", renderChart);
+labelInput.addEventListener("input", renderChart);
+prevBtn.addEventListener("click", function () { loadScenario(scenIndex - 1); });
+nextBtn.addEventListener("click", function () { loadScenario(scenIndex + 1); });
+newDataBtn.addEventListener("click", function () { loadScenario(scenIndex); });
+
+// ---- Mode-specific setup ----
+
+if (MODE === "polygon") {
+  modeInstruction.textContent = "Your histogram is drawn faintly underneath. Plot each bin's midpoint at that bin's frequency, and the line will drop to the axis at both ends.";
+  titleRow.classList.add("hidden");
+  labelRow.classList.add("hidden");
+  showValuesWhat.textContent = "point heights";
+  checkBtn.textContent = "Check my polygon";
+} else {
+  showValuesWhat.textContent = "bar heights";
+}
+
+loadScenario(scenIndex);
+</script>
+</body>
+</html>
