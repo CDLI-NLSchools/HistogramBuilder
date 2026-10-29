@@ -942,7 +942,7 @@ function loadScenario(idx) {
   fillMaxOptions();
 
   if (MODE === "polygon") {
-    // Phase 2 starts on a workable scale so the faint histogram shows at once;
+    // Phase 2 starts on a workable scale so the given histogram shows at once;
     // the student can still change it and gets the same validation.
     var step = 1;
     for (var si = 0; si < SCALE_STEPS.length; si++) {
@@ -978,7 +978,7 @@ newDataBtn.addEventListener("click", function () { loadScenario(scenIndex); });
 // ---- Mode-specific setup ----
 
 if (MODE === "polygon") {
-  modeInstruction.textContent = "Your histogram is drawn faintly underneath. Plot each bin's midpoint at that bin's frequency, and the line will drop to the axis at both ends.";
+  modeInstruction.textContent = "The histogram is given — drawn faintly underneath. Your job is the polygon: plot each bin's midpoint at that bin's frequency, and the line will drop to the axis at both ends.";
   titleRow.classList.add("hidden");
   labelRow.classList.add("hidden");
   showValuesWhat.textContent = "point heights";
