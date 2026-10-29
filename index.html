@@ -129,14 +129,6 @@
       </div>
 
       <div class="graphwrap">
-        <div class="fieldrow" id="titleRow">
-          <div class="field">
-            <label for="titleInput">Graph title (edit if you like)</label>
-            <input type="text" id="titleInput" class="titlein" autocomplete="off">
-          </div>
-        </div>
-        <svg class="chart" id="chart" viewBox="0 0 660 404" role="img" aria-label="Graph drawing area"></svg>
-
         <div class="fieldrow" role="group" aria-label="Scale controls">
           <div class="field">
             <label for="stepSelect">Scale step (gridline spacing)</label>
@@ -155,6 +147,13 @@
         </div>
         <p class="scalefb" id="scaleFeedback" aria-live="polite"></p>
 
+        <div class="fieldrow" id="titleRow">
+          <div class="field">
+            <label for="titleInput">Graph title (edit if you like)</label>
+            <input type="text" id="titleInput" class="titlein" autocomplete="off">
+          </div>
+        </div>
+
         <div class="fieldrow" id="labelRow">
           <div class="field">
             <label for="labelInput">Vertical axis label (you type it)</label>
@@ -170,6 +169,8 @@
           <button type="button" id="checkBtn">Check my graph</button>
         </div>
         <div class="feedback" id="feedback" aria-live="polite"></div>
+
+        <svg class="chart" id="chart" viewBox="0 0 660 404" role="img" aria-label="Graph drawing area"></svg>
 
         <div class="panel hidden" id="successPanel"></div>
         <div id="readbackPanel" class="hidden"></div>
