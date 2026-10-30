@@ -42,8 +42,8 @@
     padding:10px 12px;font-size:.98rem;margin:6px 0 0;word-break:break-word;}
   .datalabel{font-weight:600;margin:12px 0 0;}
   .workarea{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;margin-top:14px;}
-  .tablewrap{flex:0 1 308px;min-width:270px;}
-  .graphwrap{flex:1 1 500px;min-width:320px;}
+  .tablewrap{flex:0 1 284px;min-width:236px;}
+  .graphwrap{flex:1 1 500px;min-width:0;}
   table.freq{border-collapse:collapse;width:100%;font-size:.98rem;}
   table.freq th,table.freq td{border:1px solid var(--line);padding:7px 9px;text-align:left;}
   table.freq th{background:var(--soft);}
@@ -52,6 +52,15 @@
   .tablenote{color:var(--muted);font-size:.9rem;margin:8px 0 0;}
   .graphwrap h3{margin:0 0 8px;font-size:1.05rem;}
   svg.chart{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:8px;}
+  .topcontrols{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;}
+  .topcontrols .fieldrow{margin:0;}
+  .chartrow{display:flex;gap:14px;align-items:flex-start;margin-top:10px;}
+  .chartcol{flex:1 1 auto;min-width:0;}
+  .sidecol{flex:0 0 196px;}
+  .sidecol h3{margin:0 0 8px;font-size:1.05rem;}
+  .sidecol .steppers{flex-direction:column;flex-wrap:nowrap;margin:0;}
+  .sidecol .stepper{justify-content:space-between;}
+  .sidecol .toggle{margin:12px 0 0;}
   .barcol{cursor:ns-resize;touch-action:none;}
   .barcol.locked{cursor:default;}
   .ptcol{cursor:ns-resize;touch-action:none;}
@@ -90,7 +99,13 @@
   .rbq .feedback.bad{color:var(--bad);}
   .optbtns{display:flex;flex-wrap:wrap;gap:8px;}
   .hidden{display:none !important;}
-  @media (max-width:860px){
+  @media (max-width:900px){
+    .chartrow{flex-direction:column;}
+    .sidecol{flex:1 1 auto;width:100%;}
+    .sidecol .steppers{flex-direction:row;flex-wrap:wrap;}
+    .sidecol .stepper{justify-content:flex-start;}
+  }
+  @media (max-width:700px){
     .tablewrap,.graphwrap{flex:1 1 100%;min-width:0;}
     h1{font-size:1.4rem;}
   }
@@ -125,10 +140,10 @@
         <h3>Frequency table</h3>
         <table class="freq" id="freqTable" aria-label="Frequency table for this scenario"></table>
         <p class="tablenote">Each bin includes its left number but not its right number: 0–2 means 0 up to, but not including, 2.</p>
-        <p class="tablenote">Relative frequency is worked out for you — read the calculation in each row. Counting and relative frequency were the previous lesson's skills; this lesson is about the graph.</p>
       </div>
 
       <div class="graphwrap">
+        <div class="topcontrols">
         <div class="fieldrow" role="group" aria-label="Scale controls">
           <div class="field">
             <label for="stepSelect">Scale step (gridline spacing)</label>
@@ -145,8 +160,6 @@
           </div>
           <button type="button" id="setScaleBtn">Set scale</button>
         </div>
-        <p class="scalefb" id="scaleFeedback" aria-live="polite"></p>
-
         <div class="fieldrow" id="titleRow">
           <div class="field">
             <label for="titleInput">Graph title (edit if you like)</label>
@@ -161,19 +174,28 @@
           </div>
         </div>
 
-        <div class="steppers" id="steppers" role="group" aria-label="Bar height steppers"></div>
-
-        <label class="toggle"><input type="checkbox" id="showValues"> Show my current <span id="showValuesWhat">bar heights</span> as numbers</label>
-
-        <div class="checkrow">
-          <button type="button" id="checkBtn">Check my graph</button>
         </div>
-        <div class="feedback" id="feedback" aria-live="polite"></div>
+        <p class="scalefb" id="scaleFeedback" aria-live="polite"></p>
 
-        <svg class="chart" id="chart" viewBox="0 0 660 404" role="img" aria-label="Graph drawing area"></svg>
+        <div class="chartrow">
+          <div class="chartcol">
+            <svg class="chart" id="chart" viewBox="0 0 540 404" role="img" aria-label="Graph drawing area"></svg>
 
-        <div class="panel hidden" id="successPanel"></div>
-        <div id="readbackPanel" class="hidden"></div>
+            <div class="checkrow">
+              <button type="button" id="checkBtn">Check my graph</button>
+            </div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+
+            <div class="panel hidden" id="successPanel"></div>
+            <div id="readbackPanel" class="hidden"></div>
+          </div>
+          <div class="sidecol">
+            <h3 id="steppersHeading">Bar heights</h3>
+            <div class="steppers" id="steppers" role="group" aria-label="Bar height steppers"></div>
+
+            <label class="toggle"><input type="checkbox" id="showValues"> Show my current <span id="showValuesWhat">bar heights</span> as numbers</label>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -446,6 +468,7 @@ var maxSelect = document.getElementById("maxSelect");
 var setScaleBtn = document.getElementById("setScaleBtn");
 var scaleFeedback = document.getElementById("scaleFeedback");
 var steppersEl = document.getElementById("steppers");
+var steppersHeading = document.getElementById("steppersHeading");
 var showValues = document.getElementById("showValues");
 var showValuesWhat = document.getElementById("showValuesWhat");
 var checkBtn = document.getElementById("checkBtn");
@@ -458,7 +481,7 @@ function escapeHTML(s) {
 }
 
 // ---- Chart geometry ----
-var SVG_W = 660, SVG_H = 404;
+var SVG_W = 540, SVG_H = 404;
 var ML = 56, MR = 14, MT = 30, MB = 54;
 var PLOT_W = SVG_W - ML - MR, PLOT_H = SVG_H - MT - MB;
 var BASE_Y = MT + PLOT_H;
@@ -484,7 +507,7 @@ function renderChart() {
   out.push("<defs><clipPath id=\"plotclip\"><rect x=\"" + ML + "\" y=\"" + (MT - 6) +
     "\" width=\"" + PLOT_W + "\" height=\"" + (PLOT_H + 6) + "\"></rect></clipPath></defs>");
   // Graph title
-  out.push("<text x=\"" + (SVG_W / 2) + "\" y=\"20\" text-anchor=\"middle\" font-size=\"16\" font-weight=\"700\" fill=\"#1c2430\">" +
+  out.push("<text x=\"" + (SVG_W / 2) + "\" y=\"20\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#1c2430\">" +
     escapeHTML(axisTitleText()) + "</text>");
 
   if (!scale) {
@@ -492,12 +515,12 @@ function renderChart() {
     out.push("<line x1=\"" + ML + "\" y1=\"" + BASE_Y + "\" x2=\"" + (ML + PLOT_W) + "\" y2=\"" + BASE_Y + "\" stroke=\"#1c2430\" stroke-width=\"1.5\"></line>");
     for (var e = 0; e <= n; e++) {
       var bx = (e < n) ? colX(e) : colX(n - 1) + colW();
-      out.push("<text x=\"" + bx + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"12\" fill=\"#1c2430\">" +
+      out.push("<text x=\"" + bx + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
         (sc.start + e * sc.width) + "</text>");
     }
-    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
+    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"14\" fill=\"#1c2430\">" +
       escapeHTML(sc.xLabel) + "</text>");
-    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"14\" fill=\"#5a6572\">Choose a scale below to draw the axes.</text>");
+    out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"15\" fill=\"#5a6572\">Choose a scale above to draw the axes.</text>");
     chart.innerHTML = out.join("");
     return;
   }
@@ -507,23 +530,23 @@ function renderChart() {
     var gy = yFor(v);
     out.push("<line x1=\"" + ML + "\" y1=\"" + gy + "\" x2=\"" + (ML + PLOT_W) + "\" y2=\"" + gy +
       "\" stroke=\"" + (v === 0 ? "#1c2430" : "#d4dce4") + "\" stroke-width=\"" + (v === 0 ? 1.5 : 1) + "\"></line>");
-    out.push("<text x=\"" + (ML - 8) + "\" y=\"" + (gy + 4) + "\" text-anchor=\"end\" font-size=\"12\" fill=\"#1c2430\">" + v + "</text>");
+    out.push("<text x=\"" + (ML - 8) + "\" y=\"" + (gy + 4) + "\" text-anchor=\"end\" font-size=\"13\" fill=\"#1c2430\">" + v + "</text>");
   }
   // Vertical axis line
   out.push("<line x1=\"" + ML + "\" y1=\"" + MT + "\" x2=\"" + ML + "\" y2=\"" + BASE_Y + "\" stroke=\"#1c2430\" stroke-width=\"1.5\"></line>");
   // Vertical axis label (student's own text in Phase 1 — updates as they type)
   var yl = yAxisLabelText();
   if (yl) {
-    out.push("<text x=\"16\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"600\" fill=\"#1c2430\" transform=\"rotate(-90 16 " +
+    out.push("<text x=\"16\" y=\"" + (MT + PLOT_H / 2) + "\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"600\" fill=\"#1c2430\" transform=\"rotate(-90 16 " +
       (MT + PLOT_H / 2) + ")\">" + escapeHTML(yl) + "</text>");
   }
   // Bin edge labels
   for (var e2 = 0; e2 <= n; e2++) {
     var bx2 = (e2 < n) ? colX(e2) : colX(n - 1) + colW();
-    out.push("<text x=\"" + bx2 + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"12\" fill=\"#1c2430\">" +
+    out.push("<text x=\"" + bx2 + "\" y=\"" + (BASE_Y + 18) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
       (sc.start + e2 * sc.width) + "</text>");
   }
-  out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"13\" fill=\"#1c2430\">" +
+  out.push("<text x=\"" + (ML + PLOT_W / 2) + "\" y=\"" + (BASE_Y + 42) + "\" text-anchor=\"middle\" font-size=\"14\" fill=\"#1c2430\">" +
     escapeHTML(sc.xLabel) + "</text>");
 
   var bw = colW();
@@ -552,10 +575,10 @@ function renderChart() {
       if (locked[q]) {
         out.push("<text x=\"" + cx + "\" y=\"" + (cy - 13) + "\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"700\" fill=\"#177245\">✓</text>");
       } else if (wrongMark[q]) {
-        out.push("<text x=\"" + cx + "\" y=\"" + (cy - 13) + "\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#b3261e\">✗</text>");
+        out.push("<text x=\"" + cx + "\" y=\"" + (cy - 13) + "\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"700\" fill=\"#b3261e\">✗</text>");
       }
       if (showValues.checked) {
-        out.push("<text x=\"" + cx + "\" y=\"" + (cy + 24) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#1c2430\">" + heights[q] + "</text>");
+        out.push("<text x=\"" + cx + "\" y=\"" + (cy + 24) + "\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#1c2430\">" + heights[q] + "</text>");
       }
     }
   } else {
@@ -574,12 +597,12 @@ function renderChart() {
         ". Use the up and down arrow keys to change its height.\" aria-valuemin=\"0\" aria-valuemax=\"" + scale.max +
         "\" aria-valuenow=\"" + heights[b3] + "\" x=\"" + colX(b3) + "\" y=\"" + MT + "\" width=\"" + bw + "\" height=\"" + PLOT_H + "\" fill=\"transparent\"></rect>");
       if (locked[b3]) {
-        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY + 18) + "\" text-anchor=\"middle\" font-size=\"16\" font-weight=\"700\" fill=\"#ffffff\">✓</text>");
+        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY + 18) + "\" text-anchor=\"middle\" font-size=\"17\" font-weight=\"700\" fill=\"#ffffff\">✓</text>");
       } else if (wrongMark[b3]) {
         out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY + 18) + "\" text-anchor=\"middle\" font-size=\"15\" font-weight=\"700\" fill=\"#b3261e\">✗</text>");
       }
       if (showValues.checked && heights[b3] > 0) {
-        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY - 6) + "\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#1c2430\">" + heights[b3] + "</text>");
+        out.push("<text x=\"" + midX(b3) + "\" y=\"" + (topY - 6) + "\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"700\" fill=\"#1c2430\">" + heights[b3] + "</text>");
       }
     }
   }
@@ -983,9 +1006,11 @@ if (MODE === "polygon") {
   titleRow.classList.add("hidden");
   labelRow.classList.add("hidden");
   showValuesWhat.textContent = "point heights";
+  steppersHeading.textContent = "Point heights";
   checkBtn.textContent = "Check my polygon";
 } else {
   showValuesWhat.textContent = "bar heights";
+  steppersHeading.textContent = "Bar heights";
 }
 
 loadScenario(scenIndex);
