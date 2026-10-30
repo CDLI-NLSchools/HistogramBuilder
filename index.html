@@ -41,26 +41,25 @@
   .rawdata{background:var(--soft);border:1px solid var(--line);border-radius:8px;
     padding:10px 12px;font-size:.98rem;margin:6px 0 0;word-break:break-word;}
   .datalabel{font-weight:600;margin:12px 0 0;}
-  .workarea{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;margin-top:14px;}
-  .tablewrap{flex:0 1 284px;min-width:236px;}
-  .graphwrap{flex:1 1 500px;min-width:0;}
-  table.freq{border-collapse:collapse;width:100%;font-size:.98rem;}
-  table.freq th,table.freq td{border:1px solid var(--line);padding:7px 9px;text-align:left;}
+  .workarea{margin-top:14px;}
+  .toprow{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
+  .tablewrap{flex:0 1 410px;min-width:300px;}
+  .tablewrap h3{margin:0 0 8px;font-size:1.05rem;}
+  .graphwrap{margin-top:16px;}
+  table.freq{border-collapse:collapse;width:100%;font-size:.95rem;}
+  table.freq th,table.freq td{border:1px solid var(--line);padding:4px 7px;text-align:left;}
   table.freq th{background:var(--soft);}
   table.freq td.f{text-align:center;font-weight:600;}
   .relcalc{color:var(--muted);font-size:.9rem;white-space:nowrap;}
   .tablenote{color:var(--muted);font-size:.9rem;margin:8px 0 0;}
   .graphwrap h3{margin:0 0 8px;font-size:1.05rem;}
   svg.chart{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:8px;}
-  .topcontrols{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;}
-  .topcontrols .fieldrow{margin:0;}
-  .chartrow{display:flex;gap:14px;align-items:flex-start;margin-top:10px;}
-  .chartcol{flex:1 1 auto;min-width:0;}
-  .sidecol{flex:0 0 196px;}
+  .sidecol{flex:1 1 320px;min-width:280px;}
   .sidecol h3{margin:0 0 8px;font-size:1.05rem;}
-  .sidecol .steppers{flex-direction:column;flex-wrap:nowrap;margin:0;}
-  .sidecol .stepper{justify-content:space-between;}
+  .sidecol .steppers{flex-direction:row;flex-wrap:wrap;margin:0;}
   .sidecol .toggle{margin:12px 0 0;}
+  .fieldsrow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-top:12px;}
+  .fieldsrow .fieldrow{margin:0;}
   .barcol{cursor:ns-resize;touch-action:none;}
   .barcol.locked{cursor:default;}
   .ptcol{cursor:ns-resize;touch-action:none;}
@@ -99,14 +98,8 @@
   .rbq .feedback.bad{color:var(--bad);}
   .optbtns{display:flex;flex-wrap:wrap;gap:8px;}
   .hidden{display:none !important;}
-  @media (max-width:900px){
-    .chartrow{flex-direction:column;}
-    .sidecol{flex:1 1 auto;width:100%;}
-    .sidecol .steppers{flex-direction:row;flex-wrap:wrap;}
-    .sidecol .stepper{justify-content:flex-start;}
-  }
   @media (max-width:700px){
-    .tablewrap,.graphwrap{flex:1 1 100%;min-width:0;}
+    .tablewrap,.sidecol{flex:1 1 100%;min-width:0;}
     h1{font-size:1.4rem;}
   }
 </style>
@@ -136,66 +129,65 @@
     <p class="rawdata" id="rawData"></p>
 
     <div class="workarea">
-      <div class="tablewrap">
-        <h3>Frequency table</h3>
-        <table class="freq" id="freqTable" aria-label="Frequency table for this scenario"></table>
-        <p class="tablenote">Each bin includes its left number but not its right number: 0–2 means 0 up to, but not including, 2.</p>
+      <div class="toprow">
+        <div class="tablewrap">
+          <h3>Frequency table</h3>
+          <table class="freq" id="freqTable" aria-label="Frequency table for this scenario"></table>
+          <p class="tablenote">Each bin includes its left number but not its right number: 0–2 means 0 up to, but not including, 2.</p>
+        </div>
+
+        <div class="sidecol">
+          <h3 id="steppersHeading">Bar heights</h3>
+          <div class="steppers" id="steppers" role="group" aria-label="Bar height steppers"></div>
+
+          <label class="toggle"><input type="checkbox" id="showValues"> Show my current <span id="showValuesWhat">bar heights</span> as numbers</label>
+        </div>
       </div>
 
       <div class="graphwrap">
-        <div class="topcontrols">
-        <div class="fieldrow" role="group" aria-label="Scale controls">
-          <div class="field">
-            <label for="stepSelect">Scale step (gridline spacing)</label>
-            <select id="stepSelect">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="maxSelect">Axis maximum (top of the vertical axis)</label>
-            <select id="maxSelect"></select>
-          </div>
-          <button type="button" id="setScaleBtn">Set scale</button>
-        </div>
-        <div class="fieldrow" id="titleRow">
-          <div class="field">
-            <label for="titleInput">Graph title (edit if you like)</label>
-            <input type="text" id="titleInput" class="titlein" autocomplete="off">
-          </div>
-        </div>
+        <svg class="chart" id="chart" viewBox="0 0 720 404" role="img" aria-label="Graph drawing area"></svg>
 
-        <div class="fieldrow" id="labelRow">
-          <div class="field">
-            <label for="labelInput">Vertical axis label (you type it)</label>
-            <input type="text" id="labelInput" class="labelin" autocomplete="off" placeholder="Type the label">
+        <div class="fieldsrow">
+          <div class="fieldrow" id="titleRow">
+            <div class="field">
+              <label for="titleInput">Graph title (edit if you like)</label>
+              <input type="text" id="titleInput" class="titlein" autocomplete="off">
+            </div>
           </div>
-        </div>
 
+          <div class="fieldrow" role="group" aria-label="Scale controls">
+            <div class="field">
+              <label for="stepSelect">Scale step (gridline spacing)</label>
+              <select id="stepSelect">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="maxSelect">Axis maximum (top of the vertical axis)</label>
+              <select id="maxSelect"></select>
+            </div>
+            <button type="button" id="setScaleBtn">Set scale</button>
+          </div>
+
+          <div class="fieldrow" id="labelRow">
+            <div class="field">
+              <label for="labelInput">Vertical axis label (you type it)</label>
+              <input type="text" id="labelInput" class="labelin" autocomplete="off" placeholder="Type the label">
+            </div>
+          </div>
         </div>
         <p class="scalefb" id="scaleFeedback" aria-live="polite"></p>
 
-        <div class="chartrow">
-          <div class="chartcol">
-            <svg class="chart" id="chart" viewBox="0 0 540 404" role="img" aria-label="Graph drawing area"></svg>
-
-            <div class="checkrow">
-              <button type="button" id="checkBtn">Check my graph</button>
-            </div>
-            <div class="feedback" id="feedback" aria-live="polite"></div>
-
-            <div class="panel hidden" id="successPanel"></div>
-            <div id="readbackPanel" class="hidden"></div>
-          </div>
-          <div class="sidecol">
-            <h3 id="steppersHeading">Bar heights</h3>
-            <div class="steppers" id="steppers" role="group" aria-label="Bar height steppers"></div>
-
-            <label class="toggle"><input type="checkbox" id="showValues"> Show my current <span id="showValuesWhat">bar heights</span> as numbers</label>
-          </div>
+        <div class="checkrow">
+          <button type="button" id="checkBtn">Check my graph</button>
         </div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+
+        <div class="panel hidden" id="successPanel"></div>
+        <div id="readbackPanel" class="hidden"></div>
       </div>
     </div>
   </main>
@@ -481,7 +473,7 @@ function escapeHTML(s) {
 }
 
 // ---- Chart geometry ----
-var SVG_W = 540, SVG_H = 404;
+var SVG_W = 720, SVG_H = 404;
 var ML = 56, MR = 14, MT = 30, MB = 54;
 var PLOT_W = SVG_W - ML - MR, PLOT_H = SVG_H - MT - MB;
 var BASE_Y = MT + PLOT_H;
